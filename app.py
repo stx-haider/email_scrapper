@@ -332,7 +332,32 @@ with col_scraper:
                 corpus = f"{title} {snippet}"
                 
                 if "facebook.com" not in link and "instagram.com" not in link: continue
-                if re.search(r'website:\s*www|visit:\s*http', snippet, re.IGNORECASE): continue
+                
+                # 🔥 SUPER STRICT "NO WEBSITE" FILTER 🔥
+                # 1. سب سے پہلے ای میلز ہٹائیں تاکہ ان کے آخر میں موجود .com فلٹر کو کنفیوز نہ کرے
+                corpus_clean = re.sub(EMAIL_REGEX, '', corpus)
+                
+                # 2. فیس بک اور انسٹاگرام کے لنکس کو صاف کریں تاکہ وہ بلاک نہ ہوں
+                corpus_clean = re.sub(r'(?i)(https?://)?(www\.)?(facebook\.com|instagram\.com|fb\.com|fb\.watch|instagr\.am)(/[^\s]*)?', '', corpus_clean)
+                
+                # 3. انتہائی سخت فلٹر: کوئی بھی دوسری ڈومین، شارٹ لنک، یا ویب سائٹ کا اشارہ
+                strict_website_pattern = r'(?i)(' \
+                                         r'www\.\w+|' \
+                                         r'https?://|' \
+                                         r'website|' \
+                                         r'link in bio|' \
+                                         r'linktr\.ee|' \
+                                         r'bit\.ly|' \
+                                         r'bio\.site|' \
+                                         r'taplink|' \
+                                         r'shop online|' \
+                                         r'order online|' \
+                                         r'[\w-]+\.(com|net|org|co|uk|info|biz|site|me|io|ai|shop|store|online|pk|in|ca|us|app|dev|pro|tech)\b' \
+                                         r')'
+                
+                # اگر کلین کیے گئے ٹیکسٹ میں کوئی بھی ویب سائٹ یا لنک ملا، تو لیڈ فوراً ریجیکٹ
+                if re.search(strict_website_pattern, corpus_clean): 
+                    continue 
                     
                 emails = re.findall(EMAIL_REGEX, corpus)
                 if not emails: continue
@@ -360,6 +385,8 @@ with col_scraper:
                 progress.progress(min(len(st.session_state.engine_leads) / daily_quota, 1.0))
                 
                 if len(st.session_state.engine_leads) >= daily_quota: break
+            
+            # 🔥 ANTI-BLOCKING DELAY 🔥
             time.sleep(2)
 
         if len(st.session_state.engine_leads) >= daily_quota:
