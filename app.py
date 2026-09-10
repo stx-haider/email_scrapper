@@ -360,7 +360,7 @@ with col_scraper:
                 progress.progress(min(len(st.session_state.engine_leads) / daily_quota, 1.0))
                 
                 if len(st.session_state.engine_leads) >= daily_quota: break
-            time.sleep(1.5)
+            time.sleep(4)
 
         if len(st.session_state.engine_leads) >= daily_quota:
             save_to_vault(st.session_state.engine_leads)
